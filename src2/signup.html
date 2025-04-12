@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | DhanJi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              100: '#1a1b1e',
+              200: '#2c2e33',
+              300: '#3d4147'
+            },
+            light: {
+              100: '#ffffff',
+              200: '#f3f4f6',
+              300: '#e5e7eb'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="antialiased transition-colors duration-200 dark:bg-dark-100 bg-light-100">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="matte-card dark:bg-dark-200 bg-light-200 p-8 max-w-md w-full rounded-xl shadow-lg relative">
+      <!-- Theme Toggle Button -->
+      <button id="themeToggle" class="absolute top-4 right-4 w-10 h-10 rounded-full dark:bg-dark-300 bg-light-300 hover:opacity-80 flex items-center justify-center transition-colors duration-200">
+        <i id="themeIcon" class="fas fa-moon text-yellow-300 dark:opacity-100 opacity-50"></i>
+      </button>
+
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-chart-line text-white text-2xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold luxury-gradient-text">DhanJi</h1>
+        <p class="dark:text-gray-400 text-gray-600 mt-2">Create your account</p>
+      </div>
+
+      <form id="signupForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium dark:text-gray-400 text-gray-600 mb-1">Full Name</label>
+          <input type="text" id="fullName" class="w-full p-3 dark:bg-dark-300 bg-light-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white text-gray-900" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium dark:text-gray-400 text-gray-600 mb-1">Email</label>
+          <input type="email" id="email" class="w-full p-3 dark:bg-dark-300 bg-light-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white text-gray-900" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium dark:text-gray-400 text-gray-600 mb-1">Password</label>
+          <input type="password" id="password" class="w-full p-3 dark:bg-dark-300 bg-light-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white text-gray-900" required>
+        </div>
+
+        <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300">
+          Create Account
+        </button>
+      </form>
+
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t dark:border-gray-700 border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 dark:bg-dark-200 bg-light-200 dark:text-gray-400 text-gray-600">Or continue with</span>
+        </div>
+      </div>
+
+      <!-- Google Sign In Buttons -->
+      <div id="g_id_onload"
+           data-client_id="560700700070-5ab9l74lfm1f4pb64r5p40ccavrjongt.apps.googleusercontent.com"
+           data-context="signup"
+           data-callback="handleGoogleSignIn"
+           data-auto_prompt="false"
+           data-itp_support="true"
+           data-ux_mode="popup">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="large"
+           data-theme="filled_black"
+           data-text="continue_with"
+           data-shape="rectangular"
+           data-logo_alignment="left"
+           data-width="100%">
+      </div>
+
+      <div id="errorMessage" class="hidden mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+      </div>
+
+      <p class="text-center dark:text-gray-400 text-gray-600 mt-6">
+        Already have an account? 
+        <a href="index.html" class="text-purple-500 hover:text-purple-400">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Theme handling
+    function initTheme() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.className = theme;
+      updateThemeIcon(theme);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeIcon');
+      icon.className = theme === 'dark' ? 'fas fa-moon text-yellow-300' : 'fas fa-sun text-orange-400';
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.className;
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.className = newTheme;
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+      
+      // Update Google Sign In button theme
+      const googleBtn = document.querySelector('.g_id_signin');
+      if (googleBtn) {
+        googleBtn.setAttribute('data-theme', newTheme === 'dark' ? 'filled_black' : 'outline');
+      }
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    // Initialize theme on load
+    initTheme();
+
+    // Initialize Google Sign In
+    window.onload = function() {
+      if (typeof google === 'undefined') {
+        showError('Google Sign-In failed to load. Please try again later.');
+      }
+      initTheme();
+      console.log('Current URL:', window.location.href);
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
+      console.error('Error:', message); // Log error to console
+      setTimeout(() => {
+        errorDiv.classList.add('hidden');
+      }, 5000);
+    }
+
+    // Handle Google Sign In
+    function handleGoogleSignIn(response) {
+      console.log('Google Sign-In Response:', response);
+
+      if (!response.credential) {
+        showError('Google Sign-In failed. Please try again.');
+        return;
+      }
+
+      const credential = response.credential;
+      
+      // Decode the JWT token to get user information
+      try {
+        const payload = JSON.parse(atob(credential.split('.')[1]));
+        console.log('Decoded user info:', payload);
+        
+        // Store user information in localStorage
+        const userInfo = {
+          token: credential,
+          name: payload.name,
+          email: payload.email,
+          picture: payload.picture,
+          given_name: payload.given_name,
+          family_name: payload.family_name
+        };
+        
+        localStorage.setItem('authToken', credential);
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        
+        console.log("User info stored successfully");
+        window.location.replace('index.html');
+      } catch (error) {
+        console.error('Error processing sign-in:', error);
+        showError('Failed to complete sign-in. Please try again.');
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = {
+        fullName: document.getElementById('fullName').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      };
+
+      console.log("Form submission successful, attempting to redirect...");
+      
+      // For testing purposes, we'll directly store a dummy token and redirect
+      // Remove this in production and replace with actual backend authentication
+      localStorage.setItem('authToken', 'dummy_token');
+      window.location.replace('index.html');
+
+      // Uncomment this when you have a backend ready
+      /*
+      fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          localStorage.setItem('authToken', data.token);
+          window.location.replace('index.html');
+        } else {
+          showError(data.error || 'Signup failed. Please try again.');
+        }
+      })
+      .catch(error => {
+        showError('Network error. Please check your connection and try again.');
+        console.error('Error:', error);
+      });
+      */
+    });
+  </script>
+</body>
+</html> 

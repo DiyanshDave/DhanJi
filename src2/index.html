@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DhanJi | AI-Powered Finance</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              100: '#1a1b1e',
+              200: '#2c2e33',
+              300: '#3d4147'
+            },
+            light: {
+              100: '#ffffff',
+              200: '#f3f4f6',
+              300: '#e5e7eb'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="antialiased transition-colors duration-200 dark:bg-dark-100 bg-light-100">
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Premium Navigation -->
+    <header class="matte-nav dark:bg-dark-200 bg-light-200 p-6 flex justify-between items-center sticky top-0 z-50">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+          <i class="fas fa-chart-line text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold luxury-gradient-text">DhanJi</h1>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <a href="signup.html" class="text-purple-400 hover:text-purple-300 font-medium">Sign Up</a>
+        <button id="voiceAssistantBtn" class="relative bg-gradient-to-r from-purple-600 to-blue-500 hover:opacity-90 px-6 py-3 rounded-full flex items-center space-x-2 text-white font-medium transition-all duration-300">
+          <i class="fas fa-microphone"></i>
+          <span>AI Assistant</span>
+          <div id="voicePulse" class="absolute inset-0 rounded-full opacity-0"></div>
+        </button>
+        
+        <button id="themeToggle" class="w-10 h-10 rounded-full dark:bg-dark-300 bg-light-300 hover:opacity-80 flex items-center justify-center transition-colors duration-200">
+          <i id="themeIcon" class="fas fa-moon text-yellow-300 dark:opacity-100 opacity-50"></i>
+        </button>
+        
+        <div class="relative group">
+          <div id="userAvatar" class="w-10 h-10 rounded-full dark:bg-dark-300 bg-light-300 flex items-center justify-center overflow-hidden cursor-pointer">
+            <img id="userProfilePic" src="https://ui-avatars.com/api/?background=6C5B7B&color=fff" alt="User" class="w-full h-full object-cover">
+          </div>
+          
+          <!-- Dropdown Menu -->
+          <div class="absolute right-0 mt-2 w-48 rounded-lg dark:bg-dark-200 bg-light-200 shadow-lg py-1 hidden group-hover:block">
+            <div class="px-4 py-2 border-b dark:border-gray-700 border-gray-200">
+              <p id="userName" class="text-sm font-medium dark:text-white text-gray-900"></p>
+              <p id="userEmail" class="text-xs dark:text-gray-400 text-gray-600"></p>
+            </div>
+            <a href="#" class="block px-4 py-2 text-sm dark:text-gray-300 text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Profile Settings</a>
+            <button onclick="handleSignOut()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 space-y-8">
+      <!-- Financial Overview -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Total Balance -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6 metallic-border">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-gray-400">Total Balance</p>
+              <p id="totalBalance" class="text-3xl font-bold mt-2">₹0.00</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+              <i class="fas fa-wallet text-xl text-purple-400"></i>
+            </div>
+          </div>
+          <div class="mt-6 pt-6 border-t border-gray-700">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-gray-400">Available</span>
+              <span id="availableBalance" class="font-medium">₹0.00</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Savings</span>
+              <span id="savingsBalance" class="font-medium">₹0.00</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Monthly Expenses -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-gray-400">Monthly Expenses</p>
+              <p id="monthlyExpenses" class="text-3xl font-bold mt-2">₹0.00</p>
+              <p id="expenseChange" class="text-sm mt-1 flex items-center">
+                <span class="text-green-400">+0%</span>
+                <span class="text-gray-500 ml-1">from last month</span>
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+              <i class="fas fa-chart-pie text-xl text-blue-400"></i>
+            </div>
+          </div>
+          <div class="mt-6">
+            <div id="miniExpenseChart" class="h-20"></div>
+          </div>
+        </div>
+        
+        <!-- Savings Goal -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-gray-400">Savings Goal</p>
+              <p id="savingsGoal" class="text-3xl font-bold mt-2">₹0.00</p>
+              <p id="savingsPercentage" class="text-sm mt-1">0% completed</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+              <i class="fas fa-piggy-bank text-xl text-pink-400"></i>
+            </div>
+          </div>
+          <div class="mt-6">
+            <div class="savings-progress">
+              <div id="savingsProgressBar" class="savings-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between items-center mt-2 text-sm text-gray-400">
+              <span>₹0</span>
+              <span id="savingsTarget">₹0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 3D Financial Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 3D Expense Trend Chart -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6 chart-container">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Expense Trends</h2>
+            <div class="flex space-x-2">
+              <button id="weeklyBtn" class="px-3 py-1 rounded-full bg-gray-800 text-sm font-medium">Weekly</button>
+              <button id="monthlyBtn" class="px-3 py-1 rounded-full bg-purple-600 text-sm font-medium">Monthly</button>
+              <button id="yearlyBtn" class="px-3 py-1 rounded-full bg-gray-800 text-sm font-medium">Yearly</button>
+            </div>
+          </div>
+          <div id="trendChart3d" class="w-full h-80"></div>
+        </div>
+        
+        <!-- Category Distribution -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6">
+          <h2 class="text-xl font-semibold mb-6">Category Distribution</h2>
+          <div id="categoryChart3d" class="w-full h-80"></div>
+        </div>
+      </div>
+      
+      <!-- Transaction Management -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Add Transaction -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6">
+          <h2 class="text-xl font-semibold mb-6">Add Transaction</h2>
+          <form id="transactionForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Amount (₹)</label>
+              <input type="number" id="amount" class="w-full p-3 bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0.00" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Type</label>
+                <select id="type" class="w-full p-3 bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                  <option value="saving">Add to Savings</option>
+                  <option value="withdraw">Withdraw from Savings</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Category</label>
+                <select id="category" class="w-full p-3 bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <option value="food">🍔 Food & Dining</option>
+                  <option value="transport">🚗 Transport</option>
+                  <option value="shopping">🛍️ Shopping</option>
+                  <option value="bills">💡 Bills & Utilities</option>
+                  <option value="entertainment">🎬 Entertainment</option>
+                  <option value="health">🏥 Health</option>
+                  <option value="education">📚 Education</option>
+                  <option value="other">💼 Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Date</label>
+              <input type="date" id="date" class="w-full p-3 bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Description (Optional)</label>
+              <input type="text" id="description" class="w-full p-3 bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g. Dinner at Taj">
+            </div>
+            
+            <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 transform hover:scale-[1.02]">
+              Add Transaction
+            </button>
+          </form>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="matte-card dark:bg-dark-200 bg-light-200 p-6 lg:col-span-2">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Recent Transactions</h2>
+            <div class="flex space-x-2">
+              <button id="allTransactions" class="px-3 py-1 rounded-full bg-purple-600 text-sm font-medium">All</button>
+              <button id="expensesOnly" class="px-3 py-1 rounded-full bg-gray-800 text-sm font-medium">Expenses</button>
+              <button id="incomeOnly" class="px-3 py-1 rounded-full bg-gray-800 text-sm font-medium">Income</button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Date</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Description</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Category</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Amount</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Action</th>
+                </tr>
+              </thead>
+              <tbody id="transactionList" class="divide-y divide-gray-700">
+                <!-- Transactions will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="mt-4 flex justify-between items-center text-sm text-gray-400">
+            <div id="transactionCount">Showing 0 transactions</div>
+            <button id="loadMore" class="text-purple-400 hover:text-purple-300 font-medium">Load More</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Savings Management -->
+      <div class="matte-card dark:bg-dark-200 bg-light-200 p-6">
+        <h2 class="text-xl font-semibold mb-6">Savings Management</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Create New Savings Goal -->
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="text-lg font-medium mb-4">Create New Goal</h3>
+            <form id="savingsForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Goal Name</label>
+                <input type="text" id="goalName" class="w-full p-3 bg-gray-700 rounded-lg" placeholder="e.g. Vacation Fund" required>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Target Amount (₹)</label>
+                <input type="number" id="targetAmount" class="w-full p-3 bg-gray-700 rounded-lg" placeholder="0.00" required>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Target Date</label>
+                <input type="date" id="targetDate" class="w-full p-3 bg-gray-700 rounded-lg" required>
+              </div>
+              
+              <button type="submit" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300">
+                Create Goal
+              </button>
+            </form>
+          </div>
+          
+          <!-- Active Goals -->
+          <div class="md:col-span-2">
+            <h3 class="text-lg font-medium mb-4">Your Savings Goals</h3>
+            
+            <div class="space-y-4" id="savingsGoalsList">
+              <!-- Savings goals will be loaded here -->
+              <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-piggy-bank text-4xl mb-2"></i>
+                <p>No savings goals yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <!-- AI Voice Assistant Modal -->
+    <div id="voiceAssistantModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+      <div class="matte-card p-8 max-w-md w-full mx-4 relative">
+        <button id="closeVoiceModal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+        
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-microphone text-2xl text-white"></i>
+          </div>
+          <h3 class="text-xl font-semibold">AI Voice Assistant</h3>
+          <p class="text-gray-400 mt-1">Speak naturally to add transactions</p>
+        </div>
+        
+        <div id="voiceStatus" class="bg-gray-800 rounded-xl p-4 text-center mb-6">
+          <p id="voiceInstruction" class="text-gray-300">Press and hold the button below to speak</p>
+          <div id="voiceWave" class="flex justify-center space-x-1 mt-4 h-10">
+            <div class="w-1 bg-purple-400 rounded-full voice-wave"></div>
+            <div class="w-1 bg-purple-400 rounded-full voice-wave"></div>
+            <div class="w-1 bg-purple-400 rounded-full voice-wave"></div>
+            <div class="w-1 bg-purple-400 rounded-full voice-wave"></div>
+            <div class="w-1 bg-purple-400 rounded-full voice-wave"></div>
+          </div>
+        </div>
+        
+        <div id="voiceResult" class="hidden bg-gray-800 rounded-xl p-4 mb-6">
+          <p class="text-gray-300 font-medium">You said:</p>
+          <p id="voiceTranscript" class="text-white mt-1"></p>
+          
+          <div id="voiceConfirmation" class="mt-4 hidden">
+            <p class="text-gray-300 font-medium">Transaction details:</p>
+            <div class="mt-2 space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Amount:</span>
+                <span id="voiceAmount" class="font-medium">₹0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Category:</span>
+                <span id="voiceCategory" class="font-medium">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Type:</span>
+                <span id="voiceType" class="font-medium">-</span>
+              </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-4">
+              <button id="confirmVoiceTransaction" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">
+                Confirm
+              </button>
+              <button id="cancelVoiceTransaction" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <button id="holdToSpeak" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white py-4 px-6 rounded-lg font-medium transition-all duration-300 relative">
+          <span id="holdToSpeakText">Hold to Speak</span>
+          <div id="voiceTimer" class="absolute bottom-0 left-0 right-0 h-1 bg-white/30 hidden">
+            <div id="voiceTimerProgress" class="h-full bg-white" style="width: 0%"></div>
+          </div>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="fixed bottom-6 right-6 matte-card p-4 flex items-center space-x-3 transform translate-x-96 transition-transform duration-300 z-50 max-w-xs">
+      <div id="toastIcon" class="w-8 h-8 rounded-full flex items-center justify-center">
+        <i class="fas fa-check text-white"></i>
+      </div>
+      <div>
+        <p id="toastTitle" class="font-medium">Success</p>
+        <p id="toastMessage" class="text-sm text-gray-400">Transaction added successfully</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/transactions.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Theme handling
+    function initTheme() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.className = theme;
+      updateThemeIcon(theme);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeIcon');
+      icon.className = theme === 'dark' ? 'fas fa-moon text-yellow-300' : 'fas fa-sun text-orange-400';
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.className;
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.className = newTheme;
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    // Check authentication and load user info on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme(); // Initialize theme
+      
+      const authToken = localStorage.getItem('authToken');
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      console.log("Checking authentication...");
+      
+      if (!authToken) {
+        console.log("No auth token found, redirecting to signup...");
+        window.location.replace('signup.html');
+        return;
+      }
+
+      console.log("Auth token found, loading user info...");
+      
+      // Update user profile information
+      if (userInfo.picture) {
+        document.getElementById('userProfilePic').src = userInfo.picture;
+      }
+      if (userInfo.name) {
+        document.getElementById('userName').textContent = userInfo.name;
+      }
+      if (userInfo.email) {
+        document.getElementById('userEmail').textContent = userInfo.email;
+      }
+
+      // Show the main content
+      document.getElementById('app').style.display = 'flex';
+    });
+
+    // Handle sign out
+    function handleSignOut() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userInfo');
+      window.location.replace('signup.html');
+    }
+  </script>
+</body>
+</html>
