@@ -1,173 +1,313 @@
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layouts/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { getTransactions } from "@/services/supabase-service";
+import { Bar, Pie, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const BillSplitterPage = () => {
-  const [activeTab, setActiveTab] = useState("split-evenly");
-  const [billAmount, setBillAmount] = useState("");
-  const [tipPercentage, setTipPercentage] = useState("10");
-  const [numberOfPeople, setNumberOfPeople] = useState("2");
-  const [results, setResults] = useState<{
-    total: number;
-    tip: number;
-    totalWithTip: number;
-    perPerson: number;
-  } | null>(null);
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-  const handleSplitBill = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const amount = parseFloat(billAmount);
-    const tip = parseFloat(tipPercentage);
-    const people = parseInt(numberOfPeople);
+const AnalyticsPage = () => {
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+  });
 
-    if (isNaN(amount) {
-      alert("Please enter a valid bill amount");
-      return;
-    }
+  // Process transaction data for charts
+  const processDataForCharts = () => {
+    // Expense by category
+    const expenseCategories: Record<string, number> = {};
+    // Income by category
+    const incomeCategories: Record<string, number> = {};
+    // Monthly trends
+    const monthlyData: Record<string, { income: number; expense: number }> = {};
 
-    if (isNaN(people) || people < 1) {
-      alert("Please enter a valid number of people");
-      return;
-    }
+    transactions.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-    const tipAmount = amount * (tip / 100);
-    const totalWithTip = amount + tipAmount;
-    const perPerson = totalWithTip / people;
+      if (!monthlyData[monthYear]) {
+        monthlyData[monthYear] = { income: 0, expense: 0 };
+      }
 
-    setResults({
-      total: amount,
-      tip: tipAmount,
-      totalWithTip,
-      perPerson,
+      if (transaction.type === "income") {
+        incomeCategories[transaction.category] = 
+          (incomeCategories[transaction.category] || 0) + transaction.amount;
+        monthlyData[monthYear].income += transaction.amount;
+      } else {
+        expenseCategories[transaction.category] = 
+          (expenseCategories[transaction.category] || 0) + transaction.amount;
+        monthlyData[monthYear].expense += transaction.amount;
+      }
     });
+
+    return { expenseCategories, incomeCategories, monthlyData };
+  };
+
+  const { expenseCategories, incomeCategories, monthlyData } = processDataForCharts();
+
+  // Prepare chart data
+  const expenseByCategoryData = {
+    labels: Object.keys(expenseCategories),
+    datasets: [
+      {
+        label: "Expenses by Category",
+        data: Object.values(expenseCategories),
+        backgroundColor: [
+          "#FF6384",
+          "#36A2EB",
+          "#FFCE56",
+          "#4BC0C0",
+          "#9966FF",
+          "#FF9F40",
+        ],
+      },
+    ],
+  };
+
+  const incomeByCategoryData = {
+    labels: Object.keys(incomeCategories),
+    datasets: [
+      {
+        label: "Income by Category",
+        data: Object.values(incomeCategories),
+        backgroundColor: [
+          "#4BC0C0",
+          "#9966FF",
+          "#FF9F40",
+          "#8AC249",
+          "#FFD700",
+        ],
+      },
+    ],
+  };
+
+  const monthlyTrendsData = {
+    labels: Object.keys(monthlyData).sort(),
+    datasets: [
+      {
+        label: "Income",
+        data: Object.keys(monthlyData).sort().map((month) => monthlyData[month].income),
+        borderColor: "#4BC0C0",
+        backgroundColor: "#4BC0C0",
+        tension: 0.1,
+      },
+      {
+        label: "Expenses",
+        data: Object.keys(monthlyData).sort().map((month) => monthlyData[month].expense),
+        borderColor: "#FF6384",
+        backgroundColor: "#FF6384",
+        tension: 0.1,
+      },
+    ],
   };
 
   return (
     <MainLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Bill Splitter</h1>
+        <h1 className="text-3xl font-bold mb-2">Financial Analytics</h1>
         <p className="text-muted-foreground">
-          Easily split bills with friends and calculate tips
+          Visualize your income and expenses with interactive charts
         </p>
       </div>
 
-      <Tabs 
-        defaultValue="split-evenly" 
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="split-evenly">Split Evenly</TabsTrigger>
-          <TabsTrigger value="custom-split">Custom Split</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="income">Income</TabsTrigger>
         </TabsList>
 
-        {/* Split Evenly Tab */}
-        <TabsContent value="split-evenly" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Split Bill Evenly</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSplitBill} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="billAmount">Total Bill Amount</Label>
-                  <Input
-                    id="billAmount"
-                    type="number"
-                    placeholder="Enter total amount"
-                    value={billAmount}
-                    onChange={(e) => setBillAmount(e.target.value)}
-                    min="0"
-                    step="0.01"
-                    required
+        <TabsContent value="overview" className="mt-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Monthly Trends</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Line
+                    data={monthlyTrendsData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "top",
+                        },
+                      },
+                    }}
                   />
-                </div>
+                )}
+              </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tipPercentage">Tip Percentage</Label>
-                  <Input
-                    id="tipPercentage"
-                    type="number"
-                    placeholder="Enter tip percentage"
-                    value={tipPercentage}
-                    onChange={(e) => setTipPercentage(e.target.value)}
-                    min="0"
-                    max="100"
-                    step="1"
+            <Card>
+              <CardHeader>
+                <CardTitle>Income vs Expenses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Bar
+                    data={{
+                      labels: ["Total"],
+                      datasets: [
+                        {
+                          label: "Income",
+                          data: [Object.values(incomeCategories).reduce((a, b) => a + b, 0)],
+                          backgroundColor: "#4BC0C0",
+                        },
+                        {
+                          label: "Expenses",
+                          data: [Object.values(expenseCategories).reduce((a, b) => a + b, 0)],
+                          backgroundColor: "#FF6384",
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "top",
+                        },
+                      },
+                    }}
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="numberOfPeople">Number of People</Label>
-                  <Input
-                    id="numberOfPeople"
-                    type="number"
-                    placeholder="Enter number of people"
-                    value={numberOfPeople}
-                    onChange={(e) => setNumberOfPeople(e.target.value)}
-                    min="1"
-                    required
-                  />
-                </div>
-
-                <Button type="submit" className="w-full">
-                  Calculate Split
-                </Button>
-              </form>
-
-              {results && (
-                <div className="mt-6 space-y-2 p-4 bg-muted rounded-lg">
-                  <div className="flex justify-between">
-                    <span>Total Bill:</span>
-                    <span>₹{results.total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tip ({tipPercentage}%):</span>
-                    <span>₹{results.tip.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Total with Tip:</span>
-                    <span>₹{results.totalWithTip.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-primary mt-2 pt-2 border-t">
-                    <span>Each Person Pays:</span>
-                    <span>₹{results.perPerson.toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* Custom Split Tab */}
-        <TabsContent value="custom-split" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Bill Split</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Coming soon! This feature will allow you to split bills unevenly among participants.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setActiveTab("split-evenly")}
-              >
-                Use Even Split Instead
-              </Button>
-            </CardContent>
-          </Card>
+        <TabsContent value="expenses" className="mt-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Expenses by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Pie
+                    data={expenseByCategoryData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "right",
+                        },
+                      },
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Expense Categories</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Bar
+                    data={expenseByCategoryData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                      },
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="income" className="mt-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Income by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Pie
+                    data={incomeByCategoryData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "right",
+                        },
+                      },
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Income Sources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <Bar
+                    data={incomeByCategoryData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                      },
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </MainLayout>
   );
 };
 
-export default BillSplitterPage;
+export default AnalyticsPage;
